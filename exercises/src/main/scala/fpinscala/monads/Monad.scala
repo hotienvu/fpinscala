@@ -1,12 +1,11 @@
 package fpinscala
 package monads
 
-import parsing._
-import testing._
-import parallelism._
-import state._
-import parallelism.Par._
-import language.higherKinds
+import fpinscala.parallelism.Par._
+import fpinscala.parsing._
+import fpinscala.testing._
+
+import scala.language.higherKinds
 
 
 trait Functor[F[_]] {
@@ -21,6 +20,7 @@ trait Functor[F[_]] {
   }
 }
 
+
 object Functor {
   val listFunctor = new Functor[List] {
     def map[A,B](as: List[A])(f: A => B): List[B] = as map f
@@ -33,24 +33,32 @@ trait Monad[M[_]] extends Functor[M] {
 
   def map[A,B](ma: M[A])(f: A => B): M[B] =
     flatMap(ma)(a => unit(f(a)))
+
   def map2[A,B,C](ma: M[A], mb: M[B])(f: (A, B) => C): M[C] =
     flatMap(ma)(a => map(mb)(b => f(a, b)))
 
-  def sequence[A](lma: List[M[A]]): M[List[A]] = ???
+  def sequence[A](lma: List[M[A]]): M[List[A]] =
+    lma.foldRight(unit(List.empty[A]))((ma, mla) => map2(ma, mla)(_ :: _))
 
-  def traverse[A,B](la: List[A])(f: A => M[B]): M[List[B]] = ???
+  def traverse[A,B](la: List[A])(f: A => M[B]): M[List[B]] =
+    sequence(la.map(f))
 
-  def replicateM[A](n: Int, ma: M[A]): M[List[A]] = ???
+  def replicateM[A](n: Int, ma: M[A]): M[List[A]] =
+    sequence(List.fill(n)(ma))
 
-  def compose[A,B,C](f: A => M[B], g: B => M[C]): A => M[C] = ???
+  def compose[A,B,C](f: A => M[B], g: B => M[C]): A => M[C] =
+    a => flatMap(f(a))(g)
 
   // Implement in terms of `compose`:
-  def _flatMap[A,B](ma: M[A])(f: A => M[B]): M[B] = ???
+  def _flatMap[A,B](ma: M[A])(f: A => M[B]): M[B] =
+    compose((_: Unit) => ma, f)(())
 
-  def join[A](mma: M[M[A]]): M[A] = ???
+
+  def join[A](mma: M[M[A]]): M[A] =
+    flatMap(mma)(ma => ma)
 
   // Implement in terms of `join`:
-  def __flatMap[A,B](ma: M[A])(f: A => M[B]): M[B] = ???
+  def __flatMap[A,B](ma: M[A])(f: A => M[B]): M[B] = join(map(ma)(f))
 }
 
 case class Reader[R, A](run: R => A)
@@ -66,7 +74,11 @@ object Monad {
 
   def parserMonad[P[+_]](p: Parsers[P]): Monad[P] = ???
 
-  val optionMonad: Monad[Option] = ???
+  val optionMonad: Monad[Option] = new Monad[Option] {
+    override def unit[A](a: => A): Option[A] = ???
+
+    override def flatMap[A, B](ma: Option[A])(f: A => Option[B]): Option[B] = ???
+  }
 
   val streamMonad: Monad[Stream] = ???
 
