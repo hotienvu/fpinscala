@@ -3,6 +3,7 @@ package monads
 
 import fpinscala.parallelism.Par._
 import fpinscala.parsing._
+import fpinscala.state.State
 import fpinscala.testing._
 
 import scala.language.higherKinds
@@ -84,16 +85,32 @@ object Monad {
 
   val listMonad: Monad[List] = ???
 
-  def stateMonad[S] = ???
+  type IntState[A] = State[Int, A]
 
-  val idMonad: Monad[Id] = ???
+  object IntStateMonad extends Monad[IntState] {
+    override def unit[A](a: => A): IntState[A] = State(s => (a, s))
+
+    override def flatMap[A, B](ma: IntState[A])(f: A => IntState[B]): IntState[B] = ma.flatMap(f)
+  }
+
+  def stateMonad[S] = new Monad[({type f[x] = State[S, x]})#f]() {
+    override def unit[A](a: => A): State[S, A] = State(s => (a, s))
+
+    override def flatMap[A, B](ma: State[S, A])(f: A => State[S, B]): State[S, B] = ma.flatMap(f)
+  }
+
+  val idMonad: Monad[Id] = new Monad[Id] {
+    override def unit[A](a: => A): Id[A] = Id(a)
+
+    override def flatMap[A, B](ma: Id[A])(f: A => Id[B]): Id[B] = ma.flatMap(f)
+  }
 
   def readerMonad[R] = ???
 }
 
 case class Id[A](value: A) {
-  def map[B](f: A => B): Id[B] = ???
-  def flatMap[B](f: A => Id[B]): Id[B] = ???
+  def map[B](f: A => B): Id[B] = Id(f(value))
+  def flatMap[B](f: A => Id[B]): Id[B] = f(value)
 }
 
 object Reader {
