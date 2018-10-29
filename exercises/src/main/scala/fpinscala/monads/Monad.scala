@@ -73,17 +73,29 @@ object Monad {
 
   val parMonad: Monad[Par] = ???
 
-  def parserMonad[P[+_]](p: Parsers[P]): Monad[P] = ???
+  def parserMonad[P[+_]](p: Parsers[P]): Monad[P] = new Monad[P] {
+    override def unit[A](a: => A): P[A] = ???
 
-  val optionMonad: Monad[Option] = new Monad[Option] {
-    override def unit[A](a: => A): Option[A] = ???
-
-    override def flatMap[A, B](ma: Option[A])(f: A => Option[B]): Option[B] = ???
+    override def flatMap[A, B](ma: P[A])(f: A => P[B]): P[B] = ???
   }
 
-  val streamMonad: Monad[Stream] = ???
+  val optionMonad: Monad[Option] = new Monad[Option] {
+    override def unit[A](a: => A): Option[A] = Some(a)
 
-  val listMonad: Monad[List] = ???
+    override def flatMap[A, B](ma: Option[A])(f: A => Option[B]): Option[B] = ma.flatMap(f)
+  }
+
+  val streamMonad: Monad[Stream] = new Monad[Stream] {
+    override def unit[A](a: => A): Stream[A] = Stream(a)
+
+    override def flatMap[A, B](ma: Stream[A])(f: A => Stream[B]): Stream[B] = ma.flatMap(f)
+  }
+
+  val listMonad: Monad[List] = new Monad[List] {
+    override def unit[A](a: => A): List[A] = List(a)
+
+    override def flatMap[A, B](ma: List[A])(f: A => List[B]): List[B] = ma.flatMap(f)
+  }
 
   type IntState[A] = State[Int, A]
 
