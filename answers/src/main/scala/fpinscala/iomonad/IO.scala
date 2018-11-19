@@ -4,6 +4,8 @@ import scala.io.StdIn.readLine
 import language.higherKinds
 import language.postfixOps
 
+
+
 object IO0 {
                             /*
 
@@ -151,6 +153,11 @@ object IO1 {
       } yield () }
     }
   )
+
+  import IO._
+  def main(args: Array[String]): Unit = {
+    doWhile(IO { println("string")})(_ => IO { true }).run
+  }
 }
 
 
@@ -231,12 +238,13 @@ object IO2aTests {
   val f: Int => IO[Int] = (i: Int) => Return(i)
 
   val g: Int => IO[Int] =
-    List.fill(10000)(f).foldLeft(f){
+    List.fill(1000000)(f).foldLeft(f){
       (a: Function1[Int, IO[Int]],
         b: Function1[Int, IO[Int]]) => {
         (x: Int) => IO.suspend(a(x).flatMap(b))
       }
     }
+
 
   def main(args: Array[String]): Unit = {
     val gFortyTwo = g(42)

@@ -24,8 +24,8 @@ trait Monad[F[_]] extends Functor[F] {
   def skip[A](a: F[A]): F[Unit] = as(a)(())
   def when[A](b: Boolean)(fa: => F[A]): F[Boolean] =
     if (b) as(fa)(true) else unit(false)
-  def forever[A,B](a: F[A]): F[B] = {
-    lazy val t: F[B] = a flatMap (_ => t)
+  def forever[A](a: F[A]): F[A] = {
+    lazy val t: F[A] = a.flatMap(_ => t)
     t
   }
   def while_(a: F[Boolean])(b: F[Unit]): F[Unit] = {
